@@ -25,9 +25,9 @@ with conn.cursor() as cur:
     cur.execute("""
         CREATE TABLE IF NOT EXISTS utilisateurs (
             id SERIAL PRIMARY KEY,
+            username VARCHAR(255) NOT NULL UNIQUE,
             email VARCHAR(255) NOT NULL UNIQUE,
             mot_de_passe VARCHAR(255) NOT NULL,
-            role VARCHAR(50),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
@@ -39,7 +39,7 @@ with conn.cursor() as cur:
             year INTEGER,
             kilometers_driven INTEGER,
             fuel_type VARCHAR(50),
-            transmission VARCHAR(20), -- Changer BOOLEAN à VARCHAR
+            transmission BOOLEAN, -- Changer BOOLEAN à VARCHAR
             owner_type VARCHAR(50),
             mileage FLOAT,
             seats INTEGER,
