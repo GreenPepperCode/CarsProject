@@ -89,6 +89,9 @@ app = FastAPI()
 
 @app.post("/train")
 async def train_model(request: Request, hyperparameters: Hyperparameters, current_user: str = Depends(get_current_user)):
+    """
+    Entraîne le modèle avec les données fournies dans la requête et les hyperparamètres spécifiés.
+    """
     data = await request.json()
     X = pd.DataFrame(data.get("X"))
     y = pd.DataFrame(data.get("y"))
@@ -102,9 +105,18 @@ async def train_model(request: Request, hyperparameters: Hyperparameters, curren
 
     return {"message": "Le modèle a été entraîné avec succès"}
 
-
 @app.post("/vehicles/", response_model=Vehicle)
 async def create_vehicle(vehicle: Vehicle, cursor: psycopg2.extensions.cursor = Depends(get_db)):
+    """
+    Ajoute un nouveau véhicule à la base de données.
+    """
+    # Vérifier si le véhicule existe déjà
+    cursor.execute("SELECT * FROM vehicules WHERE brand = %s AND model = %s AND year = %s",
+                   (vehicle.brand, vehicle.model, vehicle.year))
+    existing_vehicle = cursor.fetchone()
+    if existing_vehicle:
+        raise HTTPException(status_code=400, detail="Le véhicule existe déjà")
+
     cursor.execute("INSERT INTO vehicules (brand, model, year, kilometer_driven, transmission, owner_type, mileage, engine, power, price, is_sold_new) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                    (vehicle.brand, vehicle.model, vehicle.year, vehicle.kilometer_driven, vehicle.transmission, vehicle.owner_type, vehicle.mileage, vehicle.engine, vehicle.power, vehicle.price, vehicle.is_sold_new))
     cursor.connection.commit()
@@ -112,12 +124,24 @@ async def create_vehicle(vehicle: Vehicle, cursor: psycopg2.extensions.cursor = 
 
 @app.delete("/vehicles/{vehicle_id}")
 async def delete_vehicle(vehicle_id: int, cursor: psycopg2.extensions.cursor = Depends(get_db)):
+    """
+    Supprime un véhicule de la base de données.
+    """
+    # Vérifier si le véhicule existe
+    cursor.execute("SELECT * FROM vehicules WHERE id = %s", (vehicle_id,))
+    existing_vehicle = cursor.fetchone()
+    if not existing_vehicle:
+        raise HTTPException(status_code=404, detail="Le véhicule n'existe pas")
+
     cursor.execute("DELETE FROM vehicules WHERE id = %s", (vehicle_id,))
     cursor.connection.commit()
     return {"message": "Le véhicule a été supprimé avec succès"}
 
 @app.get("/vehicles/", response_model=List[Vehicle])
 async def get_vehicles(cursor: psycopg2.extensions.cursor = Depends(get_db)):
+    """
+    Récupère tous les véhicules de la base de données.
+    """
     cursor.execute("SELECT * FROM vehicules")
     vehicles = cursor.fetchall()
 
